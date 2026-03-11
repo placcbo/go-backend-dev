@@ -1,0 +1,26 @@
+package main
+
+import "fmt"
+
+type Todo struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Completed bool   `json:"completed"`
+}
+
+type CreateTodoRequest struct {
+	Title string `json:"title"`
+}
+
+type UpdateTodoRequest struct {
+	Completed bool `json:"completed"`
+}
+
+func main() {
+	todo := Todo{
+		ID:        1,
+		Title:     "learn golang",
+		Completed: true,
+	}
+	fmt.Println(todo)
+}
