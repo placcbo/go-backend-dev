@@ -7,17 +7,18 @@ import (
 	"strings"
 )
 
+// Server holds our store. All handlers are methods on Server.
+// This is how all handlers share the same in-memory data.
 type Server struct {
-	store *TodoStore // pointer to the storage layer from storage.go
-
+	store *TodoStore
 }
 
 func NewServer() *Server {
-	return &Server{
-		store: NewTodoStore(), // creates the in-memory store
-	}
+	return &Server{store: &TodoStore{}}
 }
 
+// ─── GET /todos ────────────────────────────────────────────
+// Returns all todos as a JSON array.
 func (s *Server) handleGetTodos(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -28,21 +29,24 @@ func (s *Server) handleGetTodos(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(todos)
-
 }
 
+// ─── POST /todos ───────────────────────────────────────────
+// Creates a new todo. Client sends {"title":"..."} in the body.
 func (s *Server) handleCreateTodo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Decode the JSON body into a CreateTodoRequest struct
 	var req CreateTodoRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
 	}
 
+	// Validate: title must not be empty
 	if req.Title == "" {
 		http.Error(w, "Title is required", http.StatusBadRequest)
 		return
@@ -51,23 +55,20 @@ func (s *Server) handleCreateTodo(w http.ResponseWriter, r *http.Request) {
 	todo := s.store.Create(req.Title)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated) // 201 — something was created
+	w.WriteHeader(http.StatusCreated) // 201 = something was created
 	json.NewEncoder(w).Encode(todo)
-
 }
 
+// ─── GET /todos/:id ────────────────────────────────────────
+// Returns one specific todo by ID.
 func (s *Server) handleGetTodo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// r.URL.Path is "/todos/3" — split it: ["", "todos", "3"]
+	// Extract ID from URL: "/todos/3" → split → ["", "todos", "3"]
 	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
 	id, err := strconv.Atoi(parts[2]) // "3" → 3
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
@@ -84,6 +85,8 @@ func (s *Server) handleGetTodo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(todo)
 }
 
+// ─── PUT /todos/:id ────────────────────────────────────────
+// Updates a todo's completed status.
 func (s *Server) handleUpdateTodo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -99,7 +102,7 @@ func (s *Server) handleUpdateTodo(w http.ResponseWriter, r *http.Request) {
 
 	var req UpdateTodoRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
 	}
 
@@ -109,9 +112,10 @@ func (s *Server) handleUpdateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK) // 200 — updated, no body needed
-
 }
 
+// ─── DELETE /todos/:id ─────────────────────────────────────
+// Deletes a todo permanently.
 func (s *Server) handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -130,6 +134,5 @@ func (s *Server) handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent) // 204 — success, no body
-
+	w.WriteHeader(http.StatusNoContent) // 204 — deleted, nothing to return
 }

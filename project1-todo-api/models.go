@@ -9,7 +9,6 @@ type Todo struct {
 type CreateTodoRequest struct {
 	Title string `json:"title"`
 }
-
 type UpdateTodoRequest struct {
 	Completed bool `json:"completed"`
 }
