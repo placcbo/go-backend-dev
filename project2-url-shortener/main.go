@@ -2,23 +2,41 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
+	"project2-url-shortener/database"
 )
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-// GenerateCode returns a random n-character code.
-func GenerateCode(n int) string {
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	code := make([]byte, n)
-	for i := range code {
-		code[i] = charset[rng.Intn(len(charset))]
-	}
-	return string(code)
-}
-
 func main() {
-	code := GenerateCode(6)
-	fmt.Println("Generated code:", code)
+	err := database.Connect()
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_, err = database.SaveURL("click77", "https://example.com")
+	if err != nil {
+		fmt.Println("save error:", err)
+	}
+
+	err = database.IncrementClicks("click77")
+	if err != nil {
+		fmt.Println("increment error:", err)
+		return
+	}
+
+	err = database.IncrementClicks("click77")
+	if err != nil {
+		fmt.Println("increment error:", err)
+		return
+	}
+
+	url, err := database.GetURL("click77")
+	if err != nil {
+		fmt.Println("get error:", err)
+		return
+	}
+
+	fmt.Println("ShortCode:", url.ShortCode)
+	fmt.Println("OriginalURL:", url.OriginalURL)
+	fmt.Println("Clicks:", url.Clicks)
 }
+
