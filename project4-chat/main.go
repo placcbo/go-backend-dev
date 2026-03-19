@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type User struct {
 	ID   int
@@ -18,16 +21,18 @@ type ChatRoom struct {
 	Messages []Message
 }
 
-func NewMessage(id int, sender User, text string) Message {
+func NewMessage(id int, sender User, text string) (Message, error) {
 	if text == "" {
-		fmt.Println("warning: empty message text")
+		return Message{}, errors.New("message text cannot be empty")
 	}
 
-	return Message{
+	message := Message{
 		ID:     id,
 		Text:   text,
 		Sender: sender,
 	}
+
+	return message, nil
 }
 
 func (r ChatRoom) MessageCount() int {
@@ -50,8 +55,17 @@ func main() {
 	user1 := User{ID: 1, Name: "Kevin"}
 	user2 := User{ID: 2, Name: "Alice"}
 
-	message1 := NewMessage(1, user1, "Hello Alice")
-	message2 := NewMessage(2, user2, "Hey Kevin")
+	message1, err := NewMessage(1, user1, "Hello Alice")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	message2, err := NewMessage(2, user2, "Hey Kevin")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
 
 	room := ChatRoom{
 		Name: "General",
@@ -64,12 +78,14 @@ func main() {
 	fmt.Println("Room:", room.Name)
 	fmt.Println("Message count:", room.MessageCount())
 
-	message3 := NewMessage(3, user1, "Today I am learning functions and methods")
+	message3, err := NewMessage(3, user1, "Now I understand errors better")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
 	room.AddMessage(message3)
 
 	fmt.Println("Message count after adding:", room.MessageCount())
 	room.PrintMessages()
-
-	emptyMessage := NewMessage(4, user2, "")
-	fmt.Println(emptyMessage)
 }
