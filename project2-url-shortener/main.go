@@ -2,41 +2,23 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"project2-url-shortener/database"
 )
 
 func main() {
-	err := database.Connect()
-	if err != nil {
-		fmt.Println("error:", err)
-		return
+	if err := database.Connect(); err != nil {
+		log.Fatalf("database: %v", err)
 	}
+	fmt.Println("✓ Connected to PostgreSQL")
 
-	_, err = database.SaveURL("click77", "https://example.com")
-	if err != nil {
-		fmt.Println("save error:", err)
-	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/shorten", handleShorten)
+	mux.HandleFunc("/stats/", handleStats)
+	mux.HandleFunc("/", handleRedirect)
 
-	err = database.IncrementClicks("click77")
-	if err != nil {
-		fmt.Println("increment error:", err)
-		return
-	}
-
-	err = database.IncrementClicks("click77")
-	if err != nil {
-		fmt.Println("increment error:", err)
-		return
-	}
-
-	url, err := database.GetURL("click77")
-	if err != nil {
-		fmt.Println("get error:", err)
-		return
-	}
-
-	fmt.Println("ShortCode:", url.ShortCode)
-	fmt.Println("OriginalURL:", url.OriginalURL)
-	fmt.Println("Clicks:", url.Clicks)
+	fmt.Println("✓ Server listening on :8080")
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
-
